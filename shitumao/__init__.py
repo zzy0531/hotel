@@ -2,7 +2,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
-import autoprice
+# import autoprice
 
 Default_Header = {'X-Requested-With': 'XMLHttpRequest',
                   'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; '
@@ -18,7 +18,6 @@ BASE_URL = 'http://www.mafengwo.cn/hotel/'
 
 def readhotelListPage(hotelIndex,hotelName,db):
         hotelUrl = 'http://www.mafengwo.cn/hotel/' + str(hotelIndex) + '.html'
-        print hotelUrl
         hotelContent = BeautifulSoup(_session.get(hotelUrl).content)
         hotelList = []
         briefInfo = hotelContent.find('div',attrs={'class':'exp'})
@@ -40,12 +39,13 @@ def readhotelListPage(hotelIndex,hotelName,db):
         h_brief = ''
         try:
             try:    
-                h_brief = briefInfo.text.encode('utf-8').strip('\n').split('\n')[2]
+                h_brief = briefInfo.text.encode('utf-8').strip('\n').split('\n')[4].replace(' ','')
             except:
-                h_brief = briefInfo.text.strip('\n')
+                h_brief = briefInfo.text.encode('utf-8').strip('\n').replace(' ','')
         except:
             pass
         hotelList.append(h_brief)
+        
         
         try:
             hotelList.append(h_address.text[3:-4].encode('utf-8'))
@@ -114,15 +114,18 @@ def readhotelListPage(hotelIndex,hotelName,db):
                 hotelList.append(str("%.1f" %0.0))
                 
                 
-        useSql01 = 'update T_04_001 set C007 = "' + hotelList[2] + '" , C020 = ' + hotelList[0] + ',C009 = ' + hotelList[10] +',C010 = '+hotelList[11] + ',C011 = ' +hotelList[12] + ',C012 = '+hotelList[13] + ',C013 = "'+hotelList[1] + '" where C003 = "' + hotelName + '"'
+        
+        useSql01 = 'update T_04_001 set C007 = "' + hotelList[2] + '" , C020 = ' + hotelList[0] + ',C009 = ' + hotelList[10] +',C010 = '+hotelList[11] + ',C011 = ' +hotelList[12] + ',C012 = '+hotelList[13] + ',C013 = "'+hotelList[1] + '",C023 = "' + hotelList[3] +'",C024=' + hotelList[8] + ',C025 = ' + hotelList[6] + ',C026 = ' + hotelList[7]+ ' where C002 = "' + hotelName + '"'
         print useSql01
-        autoprice.updateSql(db, useSql01)
-            
+#         autoprice.updateSql(db, useSql01)
+        useSql02 = 'update T_04_002 set C003 = ' + hotelList[5][0:4] + ',C004 = ' + hotelList[5][0:4] + ',C005 = "' + hotelList[9] + '" where C002 = ' + hotelName
+#         autoprice.updateSql(db, useSql02)
         
 if __name__=='__main__':
-    db = autoprice.ConnectDB('stmtest')
+#     db = autoprice.ConnectDB('stmtest')
+    db = ''
     for i in hotelIndexLines:
         detailHotel = i.strip('\n').split('|')
         readhotelListPage(str(detailHotel[1]),detailHotel[0],db)
-    autoprice.Close(db)
+#     autoprice.Close(db)
         

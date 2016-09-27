@@ -46,7 +46,7 @@ def getPrice(poi_id,hotelName,stm):
     update(stm,hotelName,hotelLowestPrice,'C021')
     print hotelName,poi_id,hotelLowestPrice
     
-def getFac(hotelName,hotelUrl,stm):
+def getFac(hotelUrl,hotelName,stm):
     hotelHtmlSoup = BeautifulSoup(_session.get(hotelUrl).content)
     ulContent = hotelHtmlSoup.find('ul',attrs={'class':'property_tags'})
     ulSoup = BeautifulSoup(str(ulContent))
@@ -55,7 +55,7 @@ def getFac(hotelName,hotelUrl,stm):
     
     for everyli in liList:
         print everyli.text.strip('\n')+';',
-        facStr = facStr + everyli.text.strip('\n')+';'
+        facStr = facStr + everyli.text.strip('\n').encode('utf-8')+';'
     
     update(stm,hotelName,'"'+facStr+'"','C022')
     print hotelName,facStr,hotelUrl
@@ -80,7 +80,7 @@ def getEva(hotelIndex,hotelName,stm):
         briefInfo = hotelContent.find('div',attrs={'class':'exp'})
         try:
             try:    
-                h_brief = briefInfo.text.encode('utf-8').strip('\n').split('\n')[2]
+                h_brief = briefInfo.text.encode('utf-8').strip('\n').split('\n')[4]
             except:
                 h_brief = briefInfo.text.strip('\n')
         except:
@@ -100,8 +100,41 @@ def getLongLat(hotelIndex,hotelName,stm):
         h2 = soup.find('h2')
         LongLatList = index[0].split(',')
         print h2.text,LongLatList[0],LongLatList[1]
-        longLatSql = 'update T_04_001 set C018 = ' + LongLatList[0] + ',C019 = ' + LongLatList[1] + ' where C003 = "' + hotelName + '";'
+        longLatSql = 'update T_04_001 set C018 = ' + LongLatList[0] + ',C019 = ' + LongLatList[1] + ' where C002 = "' + hotelName + '";'
         updateSql(stm, longLatSql)
+    except:
+        pass
+    
+    try:
+        hotelSuffix = ''
+        tempUrlList = hotelIndex.split('_')
+        if len(tempUrlList) == 2:
+            hotelSuffix = tempUrlList[0] + '/dt-' + tempUrlList[1]
+        else:
+            hotelSuffix = tempUrlList[0] + '_' +tempUrlList[1] + '/dt-' + tempUrlList[2]
+        hotelUrl = 'http://hotel.qunar.com/city/' + hotelSuffix
+        htmlSoup = BeautifulSoup(_session.get(hotelUrl,timeout=3).content)
+        citeList = htmlSoup.findAll('cite')
+        hotelTel = '025-52361101'
+        
+        tempList = []
+        for cite in citeList:
+            tempList.append(cite.text.encode('utf-8').strip('\n').replace(' ','').replace('(',''))
+        signIndex = tempList.index('带有')
+        areaName = '附近无商圈、区域'
+        areaName = '、'.join(tempList[0:signIndex])
+        hotelDecoration = '暂无数据'
+        for cite in tempList:
+            if '电话' in cite:
+                hotelTel = cite.replace('电话','')
+            if '装修' in cite:
+                hotelDecoration = cite[0:4]
+        TelSql = 'update T_04_001 set C006 = "' + hotelTel + '" ,C005 = "' + areaName +'" where C002 = "' + hotelName + '"'
+        DecorationSql = 'update T_04_002 set C004 = "' +  hotelDecoration +'" where C002 = "' + hotelName + '"'
+        
+        updateSql(stm, TelSql)
+        updateSql(stm, DecorationSql)
+        print h2.text,hotelTel,hotelDecoration,areaName
     except:
         pass
     
@@ -115,7 +148,7 @@ def Close(db):
     db.close()
 
 def update(db,hotelName,hotelLowestPrice,c_column):
-    sql = 'update T_04_001 set ' + c_column + ' = ' + str(hotelLowestPrice) + ' where C003 = "' + hotelName + '"'
+    sql = 'update T_04_001 set ' + c_column + ' = ' + str(hotelLowestPrice) + ' where C002 = "' + hotelName + '"'
     cursor = db.cursor()
     try:
         cursor.execute(sql)
@@ -167,7 +200,7 @@ def updateLongLat():
     Close(stm)
         
 if __name__=='__main__':
-    selectVal = raw_input('请选择：1、更新价格\n2、更新设施\n3、更新星级\n4、更新评价\n5、更新坐标\n')
+    selectVal = raw_input('请选择：1、更新价格\n2、更新设施\n3、更新星级\n4、更新评价\n5、更新坐标和电话\n')
     if selectVal == '1':
         updateprice()
     elif selectVal == '2':
