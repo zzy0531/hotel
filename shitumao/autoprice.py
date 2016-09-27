@@ -141,7 +141,7 @@ def getLongLat(hotelIndex,hotelName,stm):
         
 def ConnectDB(DBName):
     '''连接时指定数据库名'''
-    return MySQLdb.connect('121.43.101.7','test','test',DBName,charset='utf8')
+    return MySQLdb.connect('','test','test',DBName,charset='utf8')
 
 def Close(db):
     """关闭数据库连接"""
